@@ -99,4 +99,61 @@ def load_training_data(geno_path, geno_sep, phe_path, phe_sep, phe_col_num, cate
     # Extract covariates (categorical variables)
     covariates = None
     if phe_df is not None and category_cols is not None:
-        covaria
+        covariates = phe_df.iloc[:, category_cols]
+
+    return X, y, covariates
+
+
+def load_candidate_data(geno_path, geno_sep, phe_path=None, phe_sep=None, category_cols=None):
+    """
+    Load candidate population data
+    """
+    X = load_genotype_data(geno_path, geno_sep)
+    covariates = None
+    if phe_path is not None and category_cols is not None:
+        phe_df = pd.read_csv(phe_path, sep=phe_sep, header=0)
+        covariates = phe_df.iloc[:, category_cols]
+    return X, covariates
+
+
+def calculate_geno_stats(X):
+    """
+    Calculate genotype statistics: missing rate, allele frequency, and minor allele frequency (MAF)
+    for each marker. Returns a DataFrame and can be saved as CSV.
+    """
+    stats = []
+    for col in X.columns:
+        series = X[col]
+        missing_rate = series.isna().mean()
+        nonmissing = series.dropna()
+        if len(nonmissing) == 0:
+            freq = None
+            maf = None
+        else:
+            # Assume genotype is coded as 0, 1, 2
+            freq = nonmissing.sum() / (2 * len(nonmissing))
+            maf = min(freq, 1 - freq)
+        stats.append({"marker": col, "missing_rate": missing_rate, "allele_frequency": freq, "MAF": maf})
+    return pd.DataFrame(stats)
+
+
+def calculate_phe_stats(y):
+    """
+    Calculate mean and standard deviation of phenotype data and save the histogram to current directory
+    """
+    import matplotlib.pyplot as plt
+    if y.dtype.kind in 'biufc':  # Numeric types
+        mean_val = y.mean()
+        std_val = y.std()
+        plt.figure()
+        y.hist(bins=30)
+        plt.title("Phenotype Distribution")
+        plt.xlabel("Phenotype")
+        plt.ylabel("Frequency")
+        plt.savefig("phe_distribution.png")
+        plt.close()
+        print("Phenotype mean: {:.4f}, standard deviation: {:.4f}".format(mean_val, std_val))
+        return mean_val, std_val
+    else:
+        print("Phenotype data is not numeric. Cannot compute mean and standard deviation.")
+        return None, None

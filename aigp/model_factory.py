@@ -1,4 +1,3 @@
-# aigp/model_factory.py
 from sklearn.neighbors import KNeighborsRegressor, KNeighborsClassifier
 from sklearn.svm import SVR, SVC
 from sklearn.linear_model import LinearRegression, Ridge, ElasticNet, LogisticRegression
@@ -6,10 +5,9 @@ from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier, Grad
     GradientBoostingClassifier, AdaBoostRegressor, AdaBoostClassifier, ExtraTreesClassifier
 import warnings
 
-# 尝试导入 xgboost 模块
+# Try importing xgboost
 try:
     from xgboost import XGBRegressor, XGBClassifier
-
     xgboost_available = True
 except ImportError:
     xgboost_available = False
@@ -20,27 +18,27 @@ from lightgbm import LGBMRegressor, LGBMClassifier
 
 def get_model(task_type, model_name, model_params=None, gpu=False, categorical=False):
     """
-    根据任务类型和模型名称返回模型实例
+    Return a model instance based on task type and model name
 
-    参数：
-      task_type: "regression" 或 "sort"
-      model_name: 模型名称字符串（例如 "LinearRegression", "LogisticRegression", "CatBoostClassifier" 等）
-      model_params: 模型参数字典
-      gpu: 是否使用 GPU 训练
-      categorical: 是否存在分类变量（若存在，仅允许使用 LightGBM 或 CatBoost）
+    Parameters:
+      task_type: "regression" or "sort"
+      model_name: Model name string (e.g., "LinearRegression", "LogisticRegression", "CatBoostClassifier", etc.)
+      model_params: Dictionary of model parameters
+      gpu: Whether to use GPU for training
+      categorical: Whether there are categorical covariates (if present, only LightGBM or CatBoost is allowed)
 
-    返回：
-      model: 已初始化的模型实例
+    Returns:
+      model: Initialized model instance
     """
     model_params = model_params or {}
 
-    # 如果存在分类变量，则只允许使用 CatBoost 或 LGBM 模型
+    # If categorical variables are present, only CatBoost or LightGBM models are allowed
     if categorical:
         allowed = ["CatBoost", "CatBoostClassifier", "CatBoostRegressor", "LGBM", "LGBMClassifier", "LGBMRegressor"]
         if model_name not in allowed:
-            raise ValueError("当存在分类变量时，仅支持 lightgbm 或 catboost 方法！")
+            raise ValueError("When categorical variables are present, only LightGBM or CatBoost models are supported!")
 
-    # 根据任务类型构建模型字典
+    # Build model dictionary based on task type
     if task_type == "regression":
         models = {
             "knn": lambda: KNeighborsRegressor(**model_params),
@@ -58,8 +56,8 @@ def get_model(task_type, model_name, model_params=None, gpu=False, categorical=F
         if xgboost_available:
             models["xgboost"] = lambda: XGBRegressor(**(add_gpu_params(model_params, gpu, model_type="xgboost")))
         else:
-            warnings.warn("xgboost 包未安装，将无法使用 xgboost 模型。")
-    elif task_type == "sort":  # 分类任务
+            warnings.warn("xgboost package not installed. xgboost model will be unavailable.")
+    elif task_type == "sort":  # classification
         models = {
             "knn": lambda: KNeighborsClassifier(**model_params),
             "svm": lambda: SVC(**model_params),
@@ -75,27 +73,27 @@ def get_model(task_type, model_name, model_params=None, gpu=False, categorical=F
         if xgboost_available:
             models["xgboost"] = lambda: XGBClassifier(**(add_gpu_params(model_params, gpu, model_type="xgboost")))
         else:
-            warnings.warn("xgboost 包未安装，将无法使用 xgboost 模型。")
+            warnings.warn("xgboost package not installed. xgboost model will be unavailable.")
     else:
-        raise ValueError("未知任务类型: {}".format(task_type))
+        raise ValueError("Unknown task type: {}".format(task_type))
 
     if model_name not in models:
-        raise ValueError("不支持的模型名称: {}，可选模型包括: {}".format(model_name, list(models.keys())))
+        raise ValueError("Unsupported model name: {}. Available models: {}".format(model_name, list(models.keys())))
 
     return models[model_name]()
 
 
 def add_gpu_params(params, gpu, model_type):
     """
-    根据 gpu 参数对模型参数进行更新。
+    Update model parameters based on the gpu flag
 
-    参数：
-      params: 原始参数字典
-      gpu: 是否使用 gpu
-      model_type: 模型类型，"catboost"、"lgbm" 或 "xgboost"
+    Parameters:
+      params: Original parameter dictionary
+      gpu: Whether to use GPU
+      model_type: Type of model - "catboost", "lgbm", or "xgboost"
 
-    返回：
-      更新后的参数字典
+    Returns:
+      Updated parameter dictionary
     """
     params = params.copy()
     if gpu:

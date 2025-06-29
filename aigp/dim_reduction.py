@@ -1,19 +1,18 @@
-# aigp/dim_reduction.py
 from sklearn.decomposition import PCA
 import phate
 
 
 def reduce_dimensions(X, method, n_components):
     """
-    对数据 X 进行降维
+    Perform dimensionality reduction on data X
 
-    参数：
-      X: 特征数据，DataFrame 或 ndarray
-      method: 降维方法，"pca" 或 "phate"
-      n_components: 降维后的维度数
+    Parameters:
+      X: Feature data, either a DataFrame or ndarray
+      method: Reduction method, either "pca" or "phate"
+      n_components: Number of components to reduce to
 
-    返回：
-      X_reduced: 降维后的数据
+    Returns:
+      X_reduced: Dimensionally reduced data
     """
     if method == "pca":
         reducer = PCA(n_components=n_components)
@@ -22,5 +21,5 @@ def reduce_dimensions(X, method, n_components):
         reducer = phate.PHATE(n_components=n_components)
         X_reduced = reducer.fit_transform(X)
     else:
-        raise ValueError("不支持的降维方法: {}".format(method))
+        raise ValueError("Unsupported dimensionality reduction method: {}".format(method))
     return X_reduced

@@ -34,10 +34,10 @@ def parse_args():
 
 def main():
     args = parse_args()
-    # 加载候选群体数据（如果有协变量文件则一并加载）
+    # Load candidate population data (including covariates if available)
     X, covariates = load_candidate_data(args.geno, args.geno_sep, args.phe, args.phe_sep, args.category_cols)
 
-    # 如果训练时使用了降维，则对候选数据也进行降维
+    # If dimensionality reduction was used during training, apply the same to the candidate data
     if args.dim_reduction and args.n_components:
         X_reduced = reduce_dimensions(X, args.dim_reduction, args.n_components)
         X_reduced = pd.DataFrame(X_reduced, columns=["PC{}".format(i + 1) for i in range(args.n_components)])
@@ -48,15 +48,15 @@ def main():
     elif covariates is not None:
         X = pd.concat([X.reset_index(drop=True), covariates.reset_index(drop=True)], axis=1)
 
-    # 加载保存的模型检查点
+    # Load the saved model checkpoint
     if not os.path.exists(args.model_path):
         raise ValueError("Model checkpoint not found: {}".format(args.model_path))
     model = joblib.load(args.model_path)
 
-    # 进行预测
+    # Make predictions
     predictions = model.predict(X)
 
-    # 保存预测结果
+    # Save prediction results
     output_file = "candidate_predictions.csv"
     pd.DataFrame({"prediction": predictions}).to_csv(output_file, index=False)
     print("Predictions saved to:", output_file)
